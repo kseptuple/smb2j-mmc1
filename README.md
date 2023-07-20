@@ -1,18 +1,21 @@
-# Super Mario Bros. 2 (Japan) MMC1 Port
+# Super Mario Bros. 2 (Japan) MMC1 Port All Levels in a row
 
-A port of the Japanese Super Mario Bros. 2 to the MMC1 mapper, reconfiguring the game similarly to how an official FDS-to-NES conversion might have been handled.
+This is a Super Mario Bros Lost Levels all levels (world 1 - world D) in a row hack, ported to NES version.
 
 ## Download
+Original fds rom is required to use ips patches.
 
-There are patches for both NTSC and PAL conversions, and they can be retrieved from the links below:
-- [NTSC IPS Patch](https://github.com/Simplistic-Memes/smb2j-mmc1/raw/ntsc/smb2j-mmc1.ips)
-- [PAL IPS Patch](https://github.com/Simplistic-Memes/smb2j-mmc1/raw/pal/smb2j-mmc1.ips)
+**Super Mario Bros Lost Levels W8 End.ips** will bring you to the title screen after 8-4, if not every world is beaten.
 
-Apply the patch to a clean Super Mario Bros. 2 FDS ROM. The MD5 hash of the ROM needed is `7f38210a8a2befb8d347523b4ff6ae7c`.
+**Super Mario Bros Lost Levels W8 Go Ahead.ips** will bring you to level A-1 after 8-4, if not every world is beaten.
 
-You can use an IPS patcher such as https://www.marcrobledo.com/RomPatcher.js/ to apply the patch. You may need to change the file extension of the output file to ".nes" after patching.
+File SHA-1: 3B8C8998B4887D6DD676965943D69A320738AB9C
 
-The source code compiles with asm6, provided in the repo. If using Windows, the provided batch file can compile automatically.
+File CRC32: 077B1892
+
+ROM SHA-1: 20E50128742162EE47561DB9E82B2836399C880C
+
+ROM CRC32: F04CD4CD
 
 ## Credits
 

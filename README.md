@@ -9,6 +9,10 @@ Original fds rom is required to use ips patches.
 
 **Super Mario Bros Lost Levels W8 Go Ahead.ips** will bring you to level A-1 after 8-4, if not every world is beaten.
 
+Patched rom should be **an NES file** instead of an FDS file.
+
+Original fds rom infomation:
+
 File SHA-1: 3B8C8998B4887D6DD676965943D69A320738AB9C
 
 File CRC32: 077B1892

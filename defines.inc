@@ -90,7 +90,7 @@ StarInvincibleTimer   = $079f
 ScreenTimer           = $07a0
 WorldEndTimer         = $07a1
 DemoTimer             = $07a2
-FantasyW9MsgFlag      = $07f5
+LifeTempStore         = $07f5
 
 Sprite_Data           = $0200
 

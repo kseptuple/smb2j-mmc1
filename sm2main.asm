@@ -482,6 +482,8 @@ EndCastleAward:
    ora GameTimerDisplay+1
    ora GameTimerDisplay+2
    bne ExEWA
+   lda NumberofLives      ;store number of lives into memory
+   sta LifeTempStore      ;for restoring in FadeToBlue phase
    lda #$30
    sta SelectTimer        ;set select timer (used for world 8 ending only)
    lda #$06
@@ -500,9 +502,12 @@ NextWorld: lda #$00
            lda WorldNumber
            clc
            adc #$01                  ;add one, but only up to world 9
-           cmp #World9
+           cmp #$09                  ;compare to world 10 instead of 9
            bcc NoPast9
-           lda #World9               ;make world 9 loop forever (or until game is over)
+           inc HardWorldFlag         ;go into world A, load world A-D
+           jsr DiskScreen
+           jsr LoadHardWorlds
+           lda #$00
 NoPast9:   sta WorldNumber           ;update the world number
            jsr RunLoadAreaPointer    ;get pointer for the next area
            inc FetchNewGameTimerFlag ;and get a new game timer
@@ -818,14 +823,12 @@ OutputInter:   jsr OtherInter
                lda WorldNumber              ;if on any world besides 9, do next task
                cmp #World9
                bne IncSubtask
-               inc DisableScreenFlag        ;disable screen output
+               inc ScreenRoutineTask        ;world 9 should be the same as other worlds
                rts
 
 GameOverInter: lda #$03                     ;output game over screen to buffer
                jsr WriteGameText
                lda WorldNumber
-               cmp #World9
-               beq IncSubtask
                jmp IncModeTask
 
 NoInter:       lda #$09                     ;skip ahead in screen routine list
@@ -2081,8 +2084,6 @@ RunGameOver:
        lda #$00
        sta DisableScreenFlag
        lda WorldNumber       ;if on world 9, branch on to end the game
-       cmp #World9
-       beq W9End
        jmp GameOverMenu      ;otherwise run game over menu
 W9End: lda ScreenTimer
        bne ExRGO
@@ -4025,9 +4026,8 @@ NextArea: inc AreaNumber            ;increment area number used for address load
           lda LevelNumber           ;otherwise reset level and area numbers properly
           cmp #$04
           bne NotW9
-          lda #$00
-          sta LevelNumber
-          sta AreaNumber
+          inc WorldNumber           ;make world number to be 9
+          jsr NextWorld             ;and let NextWorld routine to do everything left
 NotW9:    jsr RunLoadAreaPointer    ;get new level pointer
           inc FetchNewGameTimerFlag ;set flag to load new game timer
           jsr ChgAreaMode           ;do sub to set secondary mode, disable screen and sprite 0
@@ -13380,6 +13380,8 @@ HardWorldsCheckpoint:
 LoadHardWorlds:
          lda HardWorldFlag         ;if this is not set, skip this
          beq NoLoadHW
+         lda #$00
+         jsr SwitchCHRBank         ;load SM2CHAR1, change back princess tiles into door tiles
          lda #$03
          sta FileListNumber        ;set filelist number to load SM2DATA4
          jsr InitializeLeaves      ;init leaf positions for wind
@@ -13553,7 +13555,7 @@ GameMenuRoutine:
               sta DiskIOTask
               sta HardWorldFlag
               lda GamesBeatenCount        ;check to see if player has beaten
-              cmp #$08                    ;the game at least 8 times
+              cmp #$00                    ;no longer need checking
               bcc StG                     ;if not, start the game as usual at world 1
               lda SavedJoypadBits
               and #A_Button               ;check if the player pressed A + start
@@ -13994,25 +13996,11 @@ PrintWorld9Msgs:
        lda WorldNumber           ;check if we are in world 9
        cmp #World9
        bne GoToDemoReset         ;if we aren't, leave
-       lda OperMode              ;if in game over mode, branch
-       cmp #GameOverMode
-       beq W9GameOver
-       lda FantasyW9MsgFlag      ;if world 9 flag was set earlier, skip this part
-       bne NoFW9
-       lda #$1d                  ;otherwise set VRAM pointer to print
-       sta VRAM_Buffer_AddrCtrl  ;the hidden fantasy "9 world" message
-       lda #$10
-       sta ScreenTimer
-       inc FantasyW9MsgFlag      ;and set flag to keep it from getting printed again
 NoFW9: lda #$00
        sta DisableScreenFlag     ;turn screen back on, move on to next screen sub
        jmp NextScreenTask
 
 W9GameOver:
-    lda #$20
-    sta ScreenTimer
-    lda #$1e                  ;set VRAM pointer to print world 9 goodbye message
-    sta VRAM_Buffer_AddrCtrl
     jmp NextOperTask          ;move on to next task
 
 ScreenSubsForFinalRoom:
@@ -14122,6 +14110,8 @@ TwoBlankRows:
     .db $00
 
 FadeToBlue:
+          lda LifeTempStore
+          sta NumberofLives    ;restore number of lives
           inc EndControlCntr   ;increment a counter
           lda BlueDelayFlag    ;if it's time to fade to blue, branch
           bne BlueUpdateTiming
@@ -14169,9 +14159,20 @@ ELL: lda TwoBlankRows,x
      rts
     
 RunMushroomRetainers:
+       lda SavedJoypadBits         ;check to see if the player pressed B button
+       and #B_Button
+       bne RMRFinish               ;skip cutscene
        jsr MushroomRetainersForW8  ;draw and flash the seven mushroom retainers
        lda EventMusicBuffer        ;if still playing victory music, branch to leave
        bne ExRMR
+RMRFinish:
+       lda #$00                    ;stop BGM
+       sta AreaMusicBuffer
+       sta EventMusicBuffer
+       sta SND_TRIANGLE_REG
+       lda #$90    
+       sta SND_SQUARE1_REG
+       sta SND_SQUARE2_REG
        lda HardWorldFlag           ;if on world D, branch elsewhere
        bne BackToNormal
        inc OperMode_Task           ;otherwise just move onto the last task
@@ -14203,6 +14204,8 @@ BackToNormal:
     lda CompletedWorlds      ;if completed all worlds without skipping over any
     cmp #$ff                 ;then branch elsewhere (note warping backwards may
     beq GoToWorld9           ;allow player to complete skipped worlds)
+    inc WorldNumber          ;code for 8-4 to A-1 when not completed every world
+    jmp GoToWorld9           ;remove these 2 lines to return to title screen
 EndTheGame:
     lda #$00
     sta CompletedWorlds      ;init completed worlds flag, go back to title screen mode
@@ -14211,8 +14214,6 @@ EndTheGame:
 GoToWorld9:
     lda #$00
     sta CompletedWorlds      ;init completed worlds flag
-    sta NumberofLives        ;give the player one life
-    sta FantasyW9MsgFlag
     jmp NextWorld            ;run world 9
 
 FlashMRSpriteDataOfs:
